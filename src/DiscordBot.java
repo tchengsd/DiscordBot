@@ -23,35 +23,34 @@ import com.neovisionaries.ws.client.WebSocketFrame;
 public class DiscordBot extends WebSocketAdapter {
 	String channelID;
 	String token;
+	String name;
+	WebSocket socket;
 
-	public DiscordBot(String c, String t) {
+	public DiscordBot(String c, String t, String n) {
 		channelID = c;
 		token = t;
+		name = n;
 		WebSocketFactory factory = new WebSocketFactory();
 		try {
-			WebSocket socket = factory.createSocket(getGateway());
+			socket = factory.createSocket(getGateway());
 			socket.addListener(this);
 			socket.connect();
-			Thread.sleep(10000);
-			socket.disconnect();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (WebSocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
-		String channelID = "890750802430423053";
+	public static void main(String[] args) throws IOException {		
 		BufferedReader br = new BufferedReader(new FileReader("/Users/league/desktop/token.txt"));
+		String name = br.readLine();
 		String token = br.readLine();
+		String channelID = br.readLine();
 		br.close();
-		DiscordBot bot = new DiscordBot(channelID, token);
+		DiscordBot bot = new DiscordBot(channelID, token, name);
 		
 	}
 	
@@ -134,14 +133,46 @@ public class DiscordBot extends WebSocketAdapter {
 	}
 	
 	@Override
-	public void onTextMessage(WebSocket websocket, String text) {
-		// TODO Auto-generated method stub
-		System.out.println(text);
-	}
-	
-	@Override
 	public void onFrame(WebSocket websocket, WebSocketFrame frame) {
 		// TODO Auto-generated method stub
+		String payload = frame.getPayloadText();
+		JsonObject obj = getJsonObjectFromString(payload);
+		int op = obj.getInt("op");
+		if(op == 10) {
+			String auth = "{\n" + 
+					"  \"op\": 2,\n" + 
+					"  \"d\": {\n" + 
+					"    \"token\": \""+token+"\",\n" + 
+					"    \"intents\": 513,\n" + 
+					"    \"properties\": {\n" + 
+					"      \"$os\": \"linux\",\n" + 
+					"      \"$browser\": \"my_library\",\n" + 
+					"      \"$device\": \"my_library\"\n" + 
+					"    }\n" + 
+					"  }\n" + 
+					"}"
+					+ "";
+			socket.sendText(auth);
+		} else if(op == 0) {
+			String type = obj.getString("t");
+			if(type.equals("MESSAGE_CREATE")) {
+				JsonObject d = obj.getJsonObject("d");
+				String text = d.getString("content");
+				JsonObject author = d.getJsonObject("author");
+				String user = author.getString("username");
+				if(!user.contentEquals(name)) {
+					messageReceived(text, user);
+				}
+			}
+		}
 		System.out.println(frame);
 	}
+	
+	private void messageReceived(String message, String user) {
+		String trigger = "!whoami";
+		if(message.substring(0, trigger.length()).contentEquals(trigger)) {
+			sendMessage("You are " + user + ".");
+		}
+	}
+	//Just in case for next week: bit.ly/3ioFtUZ
 }
