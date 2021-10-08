@@ -1,3 +1,5 @@
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,6 +15,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.net.ssl.HttpsURLConnection;
+import javax.swing.Timer;
 
 import com.neovisionaries.ws.client.WebSocket;
 import com.neovisionaries.ws.client.WebSocketAdapter;
@@ -20,11 +23,14 @@ import com.neovisionaries.ws.client.WebSocketException;
 import com.neovisionaries.ws.client.WebSocketFactory;
 import com.neovisionaries.ws.client.WebSocketFrame;
 
-public class DiscordBot extends WebSocketAdapter {
+public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	String channelID;
 	String token;
 	String name;
 	WebSocket socket;
+	private Timer heartbeatTimer;
+	private int heartbeatInterval;
+	
 
 	public DiscordBot(String c, String t, String n) {
 		channelID = c;
@@ -139,6 +145,8 @@ public class DiscordBot extends WebSocketAdapter {
 		JsonObject obj = getJsonObjectFromString(payload);
 		int op = obj.getInt("op");
 		if(op == 10) {
+			JsonObject d = obj.getJsonObject("d");
+			heartbeatInterval = d.getInt("heartbeat_interval");
 			String auth = "{\n" + 
 					"  \"op\": 2,\n" + 
 					"  \"d\": {\n" + 
@@ -163,7 +171,13 @@ public class DiscordBot extends WebSocketAdapter {
 				if(!user.contentEquals(name)) {
 					messageReceived(text, user);
 				}
+			} else if(type.equals("READY")) {
+				heartbeatTimer = new Timer(heartbeatInterval, this);
+				sendHeartbeat();
+				heartbeatTimer.start();
 			}
+		} else if(op == 1) {
+			sendHeartbeat();
 		}
 		System.out.println(frame);
 	}
@@ -174,5 +188,19 @@ public class DiscordBot extends WebSocketAdapter {
 			sendMessage("You are " + user + ".");
 		}
 	}
-	//Just in case for next week: bit.ly/3ioFtUZ
+	
+	private void sendHeartbeat() {
+		String outData = "{\r\n" +
+				"	\"op\": 1,\r\n" +
+				"	\"d\": null\r\n" +
+				"}";
+		socket.sendText(outData);
+	}
+	//Just in case for next week: bit.ly/3ioFtUZ (on slide 101)
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		sendHeartbeat();
+	}
 }
