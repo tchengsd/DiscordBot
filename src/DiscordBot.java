@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -27,15 +28,23 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	String channelID;
 	String token;
 	String name;
+	private String sessionID;
 	WebSocket socket;
 	private Timer heartbeatTimer;
+	private Integer sequenceCode;
+	private boolean reconnect;
 	private int heartbeatInterval;
+	boolean rpsMode = false;
 	
 
 	public DiscordBot(String c, String t, String n) {
 		channelID = c;
 		token = t;
 		name = n;
+		initializeSocketConnection();
+	}
+	
+	private void initializeSocketConnection() {
 		WebSocketFactory factory = new WebSocketFactory();
 		try {
 			socket = factory.createSocket(getGateway());
@@ -130,6 +139,10 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 			boolean closedByServer) {
 		// TODO Auto-generated method stub
 		System.out.println("disconnected");
+		if(closedByServer) {
+			reconnect = true;
+			initializeSocketConnection();
+		}
 	}
 	
 	@Override
@@ -143,11 +156,29 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 		// TODO Auto-generated method stub
 		String payload = frame.getPayloadText();
 		JsonObject obj = getJsonObjectFromString(payload);
+		try {
+			sequenceCode = obj.getInt("s");
+		} catch(Exception e) {
+			sequenceCode = null;
+		}
 		int op = obj.getInt("op");
 		if(op == 10) {
 			JsonObject d = obj.getJsonObject("d");
 			heartbeatInterval = d.getInt("heartbeat_interval");
-			String auth = "{\n" + 
+			String auth = "";
+			if(reconnect) {
+				auth = "{\n" + 
+						"  \"op\": 6,\n" + 
+						"  \"d\": {\n" + 
+						"    \"token\": \""+token+"\",\n" + 
+						"    \"session_id\": \""+ sessionID + "\",\n" + 
+						"    \"seq\": " + sequenceCode + "\n" +  
+						"  }\n" + 
+						"}";
+				reconnect = false;
+			}
+			else {
+			auth = "{\n" + 
 					"  \"op\": 2,\n" + 
 					"  \"d\": {\n" + 
 					"    \"token\": \""+token+"\",\n" + 
@@ -160,6 +191,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 					"  }\n" + 
 					"}"
 					+ "";
+			}
 			socket.sendText(auth);
 		} else if(op == 0) {
 			String type = obj.getString("t");
@@ -172,6 +204,8 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 					messageReceived(text, user);
 				}
 			} else if(type.equals("READY")) {
+				JsonObject d = obj.getJsonObject("d");
+				sessionID = d.getString("session_id");
 				heartbeatTimer = new Timer(heartbeatInterval, this);
 				sendHeartbeat();
 				heartbeatTimer.start();
@@ -183,16 +217,60 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	}
 	
 	private void messageReceived(String message, String user) {
-		String trigger = "!whoami";
+		String trigger = "!ggintro";
+		String trigger2 = "!rps";
 		if(message.substring(0, trigger.length()).contentEquals(trigger)) {
-			sendMessage("You are " + user + ".");
+			sendMessage("Mankind knew that they cannot change society. So instead of reflecting on themselves, they blamed the beasts.");
+			sendMessage("Duel 1");
+			sendMessage("Let's Rock!");
+		}
+		else if(message.substring(0, trigger2.length()).contentEquals(trigger2)) {
+			rpsMode = true;
+			sendMessage("Use the command !play (object) to play. When you're done, send the command !end.");
+		}
+		if(rpsMode) {
+			String playTrigger = "!play";
+			String endTrigger = "!end";
+			String[] words = message.split(" ");
+			if(words[0].contentEquals(playTrigger)) {
+				int comChoice = new Random().nextInt(3);
+				if(words[1].equalsIgnoreCase("Rock")) {
+					if(comChoice == 0) {
+						sendMessage("You chose Rock. The Bot chose Rock. Tie!");
+					} else if(comChoice == 1) {
+						sendMessage("You chose Rock. The Bot chose Paper. You lose!");
+					} else if(comChoice == 2) {
+						sendMessage("You chose Rock. The Bot chose Scissors. You win!");
+					}
+				} else if(words[1].equalsIgnoreCase("Paper")) {
+					if(comChoice == 0) {
+						sendMessage("You chose Paper. The Bot chose Rock. You win!");
+					} else if(comChoice == 1) {
+						sendMessage("You chose Paper. The Bot chose Paper. Tie!");
+					} else if(comChoice == 2) {
+						sendMessage("You chose Paper. The Bot chose Scissors. You lose!");
+					}
+				} else if(words[1].equalsIgnoreCase("Scissors")) {
+					if(comChoice == 0) {
+						sendMessage("You chose Scissors. The Bot chose Rock. You lose!");
+					} else if(comChoice == 1) {
+						sendMessage("You chose Scissors. The Bot chose Paper. You win!");
+					} else if(comChoice == 2) {
+						sendMessage("You chose Rock. The Bot chose Scissors. Tie!");
+					}
+				}
+			}
+			if (words[0].contentEquals(endTrigger)) {
+				sendMessage("Game ended.");
+				rpsMode = false;
+			}
 		}
 	}
 	
 	private void sendHeartbeat() {
 		String outData = "{\r\n" +
 				"	\"op\": 1,\r\n" +
-				"	\"d\": null\r\n" +
+				"	\"d\": " + sequenceCode + "\r\n" +
 				"}";
 		socket.sendText(outData);
 	}
