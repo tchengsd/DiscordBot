@@ -154,6 +154,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	@Override
 	public void onFrame(WebSocket websocket, WebSocketFrame frame) {
 		// TODO Auto-generated method stub
+		System.out.println(frame);
 		String payload = frame.getPayloadText();
 		JsonObject obj = getJsonObjectFromString(payload);
 		try {
@@ -200,7 +201,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 				String text = d.getString("content");
 				JsonObject author = d.getJsonObject("author");
 				String user = author.getString("username");
-				if(!user.contentEquals(name)) {
+				if(!user.equals(name)) {
 					messageReceived(text, user);
 				}
 			} else if(type.equals("READY")) {
@@ -213,18 +214,18 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 		} else if(op == 1) {
 			sendHeartbeat();
 		}
-		System.out.println(frame);
 	}
 	
 	private void messageReceived(String message, String user) {
-		String trigger = "!ggintro";
+		System.out.println(message);
+		String trigger1 = "!ggintro";
 		String trigger2 = "!rps";
-		if(message.substring(0, trigger.length()).contentEquals(trigger)) {
+		if(message.equals(trigger1)) {
 			sendMessage("Mankind knew that they cannot change society. So instead of reflecting on themselves, they blamed the beasts.");
 			sendMessage("Duel 1");
 			sendMessage("Let's Rock!");
 		}
-		else if(message.substring(0, trigger2.length()).contentEquals(trigger2)) {
+		if(message.substring(0, trigger2.length()).equals(trigger2)) {
 			rpsMode = true;
 			sendMessage("Use the command !play (object) to play. When you're done, send the command !end.");
 		}
@@ -232,7 +233,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 			String playTrigger = "!play";
 			String endTrigger = "!end";
 			String[] words = message.split(" ");
-			if(words[0].contentEquals(playTrigger)) {
+			if(words[0].equals(playTrigger)) {
 				int comChoice = new Random().nextInt(3);
 				if(words[1].equalsIgnoreCase("Rock")) {
 					if(comChoice == 0) {
@@ -260,7 +261,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 					}
 				}
 			}
-			if (words[0].contentEquals(endTrigger)) {
+			if (words[0].equals(endTrigger)) {
 				sendMessage("Game ended.");
 				rpsMode = false;
 			}
