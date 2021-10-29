@@ -220,12 +220,13 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 		System.out.println(message);
 		String trigger1 = "!ggintro";
 		String trigger2 = "!rps";
+		String trigger3 = "";
 		if(message.equals(trigger1)) {
 			sendMessage("Mankind knew that they cannot change society. So instead of reflecting on themselves, they blamed the beasts.");
 			sendMessage("Duel 1");
 			sendMessage("Let's Rock!");
 		}
-		if(message.substring(0, trigger2.length()).equals(trigger2)) {
+		if(message.equals(trigger2)) {
 			rpsMode = true;
 			sendMessage("Use the command !play (object) to play. When you're done, send the command !end.");
 		}
@@ -257,7 +258,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 					} else if(comChoice == 1) {
 						sendMessage("You chose Scissors. The Bot chose Paper. You win!");
 					} else if(comChoice == 2) {
-						sendMessage("You chose Rock. The Bot chose Scissors. Tie!");
+						sendMessage("You chose Scissors. The Bot chose Scissors. Tie!");
 					}
 				}
 			}
@@ -275,7 +276,6 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 				"}";
 		socket.sendText(outData);
 	}
-	//Just in case for next week: bit.ly/3ioFtUZ (on slide 101)
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
