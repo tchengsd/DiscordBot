@@ -35,6 +35,8 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	private boolean reconnect;
 	private int heartbeatInterval;
 	boolean rpsMode = false;
+	int playerScore = 0;
+	int cpuScore = 0;
 	
 
 	public DiscordBot(String c, String t, String n) {
@@ -218,21 +220,20 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	
 	private void messageReceived(String message, String user) {
 		System.out.println(message);
-		String trigger1 = "!ggintro";
+		String trigger1 = "!whoami";
 		String trigger2 = "!rps";
 		String trigger3 = "";
 		if(message.equals(trigger1)) {
-			sendMessage("Mankind knew that they cannot change society. So instead of reflecting on themselves, they blamed the beasts.");
-			sendMessage("Duel 1");
-			sendMessage("Let's Rock!");
+			sendMessage("You are " + user + ".");
 		}
 		if(message.equals(trigger2)) {
 			rpsMode = true;
-			sendMessage("Use the command !play (object) to play. When you're done, send the command !end.");
+			sendMessage("Use the command !play (object) to play. Send !score to view player and bot scores. When you're done, send the command !end.");
 		}
 		if(rpsMode) {
 			String playTrigger = "!play";
 			String endTrigger = "!end";
+			String scoreTrigger = "!score";
 			String[] words = message.split(" ");
 			if(words[0].equals(playTrigger)) {
 				int comChoice = new Random().nextInt(3);
@@ -241,22 +242,28 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 						sendMessage("You chose Rock. The Bot chose Rock. Tie!");
 					} else if(comChoice == 1) {
 						sendMessage("You chose Rock. The Bot chose Paper. You lose!");
+						cpuScore++;
 					} else if(comChoice == 2) {
 						sendMessage("You chose Rock. The Bot chose Scissors. You win!");
+						playerScore++;
 					}
 				} else if(words[1].equalsIgnoreCase("Paper")) {
 					if(comChoice == 0) {
 						sendMessage("You chose Paper. The Bot chose Rock. You win!");
+						playerScore++;
 					} else if(comChoice == 1) {
 						sendMessage("You chose Paper. The Bot chose Paper. Tie!");
 					} else if(comChoice == 2) {
 						sendMessage("You chose Paper. The Bot chose Scissors. You lose!");
+						cpuScore++;
 					}
 				} else if(words[1].equalsIgnoreCase("Scissors")) {
 					if(comChoice == 0) {
 						sendMessage("You chose Scissors. The Bot chose Rock. You lose!");
+						cpuScore++;
 					} else if(comChoice == 1) {
 						sendMessage("You chose Scissors. The Bot chose Paper. You win!");
+						playerScore++;
 					} else if(comChoice == 2) {
 						sendMessage("You chose Scissors. The Bot chose Scissors. Tie!");
 					}
@@ -264,7 +271,13 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 			}
 			if (words[0].equals(endTrigger)) {
 				sendMessage("Game ended.");
+				playerScore = 0;
+				cpuScore = 0;
 				rpsMode = false;
+			}
+			if (words[0].equals(scoreTrigger)) {
+				sendMessage("Player score: " + playerScore);
+				sendMessage("Bot score: "+ cpuScore);
 			}
 		}
 	}
