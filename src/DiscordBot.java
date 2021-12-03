@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Random;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.net.ssl.HttpsURLConnection;
@@ -62,8 +64,8 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	}
 
 	public static void main(String[] args) throws IOException {		
-		//BufferedReader br = new BufferedReader(new FileReader("/Users/league/desktop/token.txt"));
-		BufferedReader br = new BufferedReader(new FileReader("/C:/Users/tchen/Desktop/token.txt"));
+		BufferedReader br = new BufferedReader(new FileReader("/Users/league/desktop/token.txt"));
+		//BufferedReader br = new BufferedReader(new FileReader("/C:/Users/tchen/Desktop/token.txt"));
 		String name = br.readLine();
 		String token = br.readLine();
 		String channelID = br.readLine();
@@ -220,21 +222,39 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	}
 	
 	private void messageReceived(String message, String user) {
+		String[] words = message.split(" ");
 		String trigger1 = "!whoami";
 		String trigger2 = "!rps";
-		String trigger3 = "";
+		String trigger3 = "!tvshow";
 		if(message.equals(trigger1)) {
 			sendMessage("You are " + user + ".");
 		}
 		if(message.equals(trigger2)) {
 			rpsMode = true;
-			sendMessage("Use the command !play (object) to play. Send !score to view player and bot scores. When you're done, send the command !end.");
+			sendMessage("Use the command !play (object) to play. Send !score to view player and bot scores."
+					+ " When you're done, send the command !end.");
+		}
+		if(words[0].equals(trigger3)) {
+			String show = "";
+			for(int i = 1; i < words.length; i++) {
+				if(i == 1) {
+					show = show + words[1];
+				}
+				else {
+					show = show + " " + words[i];
+				}
+			}
+			try {
+				TVApp(show);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		if(rpsMode) {
 			String playTrigger = "!play";
 			String endTrigger = "!end";
 			String scoreTrigger = "!score";
-			String[] words = message.split(" ");
 			if(words[0].equals(playTrigger)) {
 				int comChoice = new Random().nextInt(3);
 				if(words[1].equalsIgnoreCase("Rock")) {
@@ -280,6 +300,31 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 				sendMessage("Bot score: "+ cpuScore);
 			}
 		}
+	}
+	
+	void TVApp(String show) throws IOException {
+		int id = getShowID(show);
+		URL site = new URL("https://api.tvmaze.com/shows/"+id+"/seasons");
+		HttpURLConnection connection = (HttpURLConnection) site.openConnection();
+		InputStream input = connection.getInputStream();
+		JsonReader reader = Json.createReader(input);
+		JsonArray arr = reader.readArray();
+		int totalSeasons = arr.size();
+		for(int i = 0; i < totalSeasons; i++) {
+			JsonObject obj = arr.getJsonObject(i);
+			sendMessage("Season "+(i+1)+": "+obj.getInt("episodeOrder")+" Episodes");
+		}
+	}
+	
+	static int getShowID(String show) throws IOException {
+		URL site = new URL("https://api.tvmaze.com/singlesearch/shows?q="+show);
+		HttpURLConnection connection = (HttpURLConnection) site.openConnection();
+		InputStream input = connection.getInputStream();
+		JsonReader reader = Json.createReader(input);
+		JsonObject object = reader.readObject();
+		input.close();
+		int id = object.getInt("id");
+		return id;
 	}
 	
 	private void sendHeartbeat() {
