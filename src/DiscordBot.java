@@ -221,11 +221,11 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 		}
 	}
 	
-	private void messageReceived(String message, String user) {
+	void messageReceived(String message, String user) {
 		String[] words = message.split(" ");
 		String trigger1 = "!whoami";
 		String trigger2 = "!rps";
-		String trigger3 = "!tvshow";
+		String trigger3 = "!showlength";
 		if(message.equals(trigger1)) {
 			sendMessage("You are " + user + ".");
 		}
