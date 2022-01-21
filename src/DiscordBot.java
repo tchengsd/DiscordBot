@@ -64,8 +64,7 @@ public class DiscordBot extends WebSocketAdapter implements ActionListener {
 	}
 
 	public static void main(String[] args) throws IOException {		
-		BufferedReader br = new BufferedReader(new FileReader("/Users/league/desktop/token.txt"));
-		//BufferedReader br = new BufferedReader(new FileReader("/C:/Users/tchen/Desktop/token.txt"));
+		BufferedReader br = new BufferedReader(new FileReader("/C:/Users/tchen/Desktop/token.txt"));
 		String name = br.readLine();
 		String token = br.readLine();
 		String channelID = br.readLine();
